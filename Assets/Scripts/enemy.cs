@@ -1,10 +1,22 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Photon.Pun;
 
-public class enemy : MonoBehaviour
+public enum EnemyStatus
 {
+	Chill,
+	Angry,
+	GoBack
+}
+
+public class enemy : MonoBehaviourPun
+{
+	[SerializeField] private float scanRadius = 20;
+	[SerializeField] private LayerMask scanLayerMask;
+	
 	// Скорость врага
 	public float speed;
 
@@ -14,89 +26,147 @@ public class enemy : MonoBehaviour
 	bool moveingRight;
 
 	// Герой
-	public Transform player;
+	private move _targetPlayer;
 	public static int heroHp = 10;
 
-	// Дистанция остановки
-	public float stoppingDistance;
-
-	// Три состояния
-	bool chill = false;
-	public static bool angry = false;
-	bool goBack = false;
+	// Состояние
+	private EnemyStatus _enemyStatus;
 
 	// Панель
 	public GameObject panel;
 
 	public GameObject monsterAudio;
-
-
-
-
-	private void Start() 
+	
+	// Кешированный трансформ
+	private Transform _transform;
+	
+	// Массив для сканирования
+	private Collider[] _scannedPlayers;
+	
+	private void Awake()
 	{
-		player = GameObject.FindGameObjectWithTag("Player").transform;
+		_transform = transform;
+		_scannedPlayers = new Collider[6];
 	}
 
 	private void Update()
 	{
-		
-		if (Vector3.Distance(transform.position, point.position) < positionOfPatrol && angry == false)
+		if (!photonView.IsMine)
 		{
-			chill = true;
-		}
-		if (Vector3.Distance(transform.position, player.position)<stoppingDistance)
-		{
-			angry = true;
-			chill = false;
-			goBack = false;
-		}
-		if (Vector3.Distance(transform.position, player.position)>stoppingDistance)
-		{
-			goBack = true;
-			angry = false;
+			return;
 		}
 
-		if (chill == true)
+		_targetPlayer = FindNearestPlayer();
+		
+		if (_targetPlayer)
 		{
-			Chill();
+			_enemyStatus = EnemyStatus.Angry;
 		}
-		else if (angry == true)
+		else if (Vector3.Distance(_transform.position, point.position) < positionOfPatrol)
 		{
-			Angry();
-			monsterAudio.SetActive(true);
+			_enemyStatus = EnemyStatus.Chill;
 		}
-		else if (goBack == true)
+		else
 		{
-			GoBack();
+			_enemyStatus = EnemyStatus.GoBack;
+		}
+	}
+
+	private void FixedUpdate()
+	{
+		if (!photonView.IsMine)
+		{
+			return;
 		}
 		
+		switch (_enemyStatus)
+		{
+			case EnemyStatus.Angry:
+				if (_targetPlayer)
+				{
+					Angry(_targetPlayer);
+				}
+				break;
+			case EnemyStatus.Chill:
+				Chill();
+				break;
+			case EnemyStatus.GoBack:
+				GoBack();
+				break;
+		}
+	}
+
+	move FindNearestPlayer()
+	{
+		var playerScanCount = Physics.OverlapSphereNonAlloc(_transform.position, scanRadius, _scannedPlayers, scanLayerMask);
+
+		var minDistance = scanRadius;
+		move targetPlayer = null;
+
+		for (int i = 0; i < playerScanCount; i++)
+		{
+			var player = _scannedPlayers[i].GetComponent<move>();
+			if (!player)
+			{
+				continue;
+			}
+			
+			var playerPosition = player.transform.position;
+			var distance = Vector3.Distance(playerPosition, _transform.position);
+			
+			if (distance < minDistance)
+			{
+				minDistance = distance;
+				targetPlayer = player;
+			}
+		}
+
+		return targetPlayer;
 	}
 
 	void Chill()
 	{
-		if (transform.position.x > point.position.x + positionOfPatrol)
+		var position = _transform.position;
+		var pointPosition = point.position;
+		
+		if (position.x > pointPosition.x + positionOfPatrol)
 		{
 			moveingRight = false;
 		}
-		else if (transform.position.x < point.position.x - positionOfPatrol)
+		else if (position.x < pointPosition.x - positionOfPatrol)
 		{
 			moveingRight = true;
 		}
 
 		if (moveingRight)
 		{
-			transform.position = new Vector3(transform.position.x + speed * Time.deltaTime, transform.position.y, transform.position.z);
+			transform.position = new Vector3(position.x + speed * Time.deltaTime, position.y, position.z);
 		}
 		else
 		{
-			transform.position = new Vector3(transform.position.x - speed * Time.deltaTime, transform.position.y, transform.position.z);
+			transform.position = new Vector3(position.x - speed * Time.deltaTime, position.y, position.z);
 		}
 	}
 
-	void Angry()
+	void Angry(move targetPlayer)
 	{
-		transform.position = Vector3.MoveTowards(transform.position, player.position, speed * Time.deltaTime);
+		var targetOwnerPlayer = targetPlayer.GetComponent<PhotonView>().Owner;
+		if (!Equals(targetOwnerPlayer, photonView.Owner))
+		{
+			photonView.RPC("PlayAngySound", targetOwnerPlayer);
+		}
+		else
+		{
+			PlayAngySound();
+		}
+
+		transform.position = Vector3.MoveTowards(transform.position, targetPlayer.transform.position, speed * Time.deltaTime);
+	}
+
+	[PunRPC]
+	private void PlayAngySound()
+	{
+		monsterAudio.SetActive(true);
 	}
 
 	void GoBack()
@@ -104,8 +174,8 @@ public class enemy : MonoBehaviour
 		transform.position = Vector3.MoveTowards(transform.position, point.position, speed * Time.deltaTime);
 	}
 
-	private IEnumerator OnTriggerEnter(Collider other){
-		if (other.CompareTag("Player"))
+	private IEnumerator OnCollisionEnter(Collision other){
+		if (other.collider.CompareTag("Player"))
 		{
 			heroHp--;
 			speed = speed / 10f;

@@ -251,7 +251,7 @@ Transform:
   - {fileID: 666031248599113906}
   - {fileID: 1059628601205465485}
   m_Father: {fileID: 0}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!95 &1059628601254949268
 Animator:
@@ -625,11 +625,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66f6add70654a26438d2d75f5b9bda7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  enableScan: 1
+  scanRadius: 20
+  scanLayerMask:
+    serializedVersion: 2
+    m_Bits: 8
   speed: 12
   positionOfPatrol: 7
   point: {fileID: 1059628601205465485}
-  player: {fileID: 7795992468056865480, guid: 79f3a94a33ef778499450e6e9c70b4b7, type: 3}
-  stoppingDistance: 35
   panel: {fileID: 0}
   monsterAudio: {fileID: 0}
 --- !u!114 &1059628600962221660

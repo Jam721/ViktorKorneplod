@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
-public class monsterHp1 : MonoBehaviour
+public class monsterHp1 : MonoBehaviourPun
 {
     public int hp = 30;
 
@@ -23,7 +23,13 @@ public class monsterHp1 : MonoBehaviour
         hp -= 1;
     }
 
-    private void OnCollisionEnter(Collision other) {
+    private void OnCollisionEnter(Collision other)
+    {
+        if (!photonView.IsMine || !other.collider.CompareTag("Bullet"))
+        {
+            return;
+        }
+        
         Damage();
         if (hp<=0)
         {
