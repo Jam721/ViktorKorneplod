@@ -1,0 +1,5 @@
+Assets/Fantasy filter=lfs diff=lfs merge=lfs -text
+Forest filter=lfs diff=lfs merge=lfs -text
+Environment filter=lfs diff=lfs merge=lfs -text
+Free filter=lfs diff=lfs merge=lfs -text
+Sample/Scenes/base/OcclusionCullingData.asset filter=lfs diff=lfs merge=lfs -text
