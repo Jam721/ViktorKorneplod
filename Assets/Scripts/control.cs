@@ -15,12 +15,13 @@ public class control : MonoBehaviour
 
     public void ReloadScene()
     {
-        PhotonNetwork.LoadLevel("base");
+        //PhotonNetwork.LoadLevel("base");
+        SpawnManager.Instance.RespawnLocalPlayer();
         mashrooms.intText = 0;
         enemy.heroHp = 10;
-        GetComponent<enemy>().monsterAudio.SetActive(false);
-        GetComponent<monsterHp1>().pos.Stop();
-        GetComponent<move>().player.GetComponent<Rigidbody>().isKinematic = false;
+        //GetComponent<enemy>().monsterAudio.SetActive(false);
+        //GetComponent<monsterHp1>().pos.Stop();
+        //GetComponent<move>().player.GetComponent<Rigidbody>().isKinematic = false;
     }
 
 
