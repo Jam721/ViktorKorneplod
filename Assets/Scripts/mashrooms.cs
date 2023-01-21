@@ -25,6 +25,9 @@ public class mashrooms : MonoBehaviour
 
     private void Update() {
         text.text = intText.ToString();
-        textHp.text = enemy.heroHp.ToString();
+        if (textHp)
+        {
+            textHp.text = enemy.heroHp.ToString();
+        }
     }
 }
